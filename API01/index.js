@@ -85,11 +85,12 @@ app.delete('/autor/:id', (req, res) => {
 })
 
 app.post('/autor', (req, res) => {
+    const idautor = req.body.idautor;
     const noautor = req.body.noautor;
     const idnacionalidade = req.body.idnacionalidade;
      
-    const sql = 'INSERT INTO tbAutor (NoAutor, IdNacionalidade) VALUES (?, ?)';
-    con.query(sql, [noautor, idnacionalidade], (err, result, fields) => { //No lugar da interrogação na linha acima, vai entrar o que está em []
+    const sql = 'INSERT INTO tbAutor (IdAutor, NoAutor, IdNacionalidade) VALUES (?, ?, ?)';
+    con.query(sql, [idautor, noautor, idnacionalidade], (err, result, fields) => { //No lugar da interrogação na linha acima, vai entrar o que está em []
         if (err) {
             throw err;
         }
@@ -102,6 +103,24 @@ app.post('/autor', (req, res) => {
     });
 })
 
+app.put('/autor/:id', (req, res) => {
+    const id = req.params.id;
+    const noautor = req.body.noautor;
+    const idnacionalidade = req.body.idnacionalidade;
+
+    const sql = 'UPDATE tbAutor SET NoAutor = ?, IdNacionalidade = ? WHERE IdAutor = ?';
+    con.query(sql, [noautor, idnacionalidade, id], (err, result, fields) => { //No lugar da interrogação, vai entrar o que está em []
+        if (err) {
+            throw err;
+        }
+        if (result.affectedRows > 0) {
+            res.status(200).send('Registro atualizado com sucesso');
+        }
+        else {
+            res.status(400).send('Autor não encontrado');
+        }
+    });
+})
 
 
 app.listen(port, () => {
