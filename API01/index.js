@@ -1,9 +1,11 @@
 const express = require('express')
 const mysql = require('mysql'); //npm install mysql2 --save
 const app = express()
+const jwt = require('jsonwebtoken')
 const port = 3000
 
 app.use(express.json()); //Para a api saber tratar os json
+const MinhaSenha = 'ifrn2@23';
 
 const con = mysql.createConnection({
     host: 'localhost',
@@ -11,6 +13,34 @@ const con = mysql.createConnection({
     password: '',
     database: 'dbbiblioteca'
 });
+
+app.post('/login', (req, res) => {
+    if (req.body.usuario === 'luiz' && req.body.senha === '123') {
+        const id = 1;
+        const nome = 'Luiz Ferreira';
+        const grupo = 'Gerente';
+        const token = jwt.sign({ id, nome, grupo }, MinhaSenha, { expiresIn: '5m' });
+        res.json({ auth: true, token: token });
+    } else {
+        res.status(403).json({ message: 'Login Inválido!' });
+    }
+});
+
+function verificarToken(req, res, next) {
+    const token = req.headers['x-access-token'];
+    if (!token) {
+        res.status(401).json({ auth: false, message: 'Nenhum token de autenticação informado.' });
+    } else {
+        jwt.verify(token, MinhaSenha, function (err, decoded) {
+            if (err) {
+                res.status(500).json({ auth: false, message: 'Token inválido.' });
+            } else {
+                console.log('Metodo acessado por ' + decoded.nome)
+                next();
+            }
+        });
+    }
+}
 
 con.connect((err) => {
     if (err) {
@@ -40,7 +70,7 @@ app.get('/alunos/:id', (req, res) => {
     }
 })
 
-app.get('/autor', (req, res) => {
+app.get('/autor', verificarToken, (req, res) => {
     con.query('SELECT * FROM tbAutor', (err, result, fields) => {
         if (err) {
             throw err;
@@ -88,7 +118,7 @@ app.post('/autor', (req, res) => {
     const idautor = req.body.idautor;
     const noautor = req.body.noautor;
     const idnacionalidade = req.body.idnacionalidade;
-     
+
     const sql = 'INSERT INTO tbAutor (IdAutor, NoAutor, IdNacionalidade) VALUES (?, ?, ?)';
     con.query(sql, [idautor, noautor, idnacionalidade], (err, result, fields) => { //No lugar da interrogação na linha acima, vai entrar o que está em []
         if (err) {
