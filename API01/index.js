@@ -1,3 +1,7 @@
+//ESTÁ DANDO ERRO NA EXECUÇÃO, PEGUEI A DO PROFESSOR.
+
+
+
 const express = require('express')
 const mysql = require('mysql'); //npm install mysql2 --save
 const app = express()
@@ -7,6 +11,8 @@ const port = 3000
 app.use(express.json()); //Para a api saber tratar os json
 const MinhaSenha = 'ifrn2@23';
 
+const editoraRouter = require('./editora.js');
+
 const con = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -14,17 +20,32 @@ const con = mysql.createConnection({
     database: 'dbbiblioteca'
 });
 
-app.post('/login', (req, res) => {
-    if (req.body.usuario === 'luiz' && req.body.senha === '123') {
-        const id = 1;
-        const nome = 'Luiz Ferreira';
-        const grupo = 'Gerente';
-        const token = jwt.sign({ id, nome, grupo }, MinhaSenha, { expiresIn: '5m' });
-        res.json({ auth: true, token: token });
-    } else {
-        res.status(403).json({ message: 'Login Inválido!' });
+con.connect((err) => {
+    if (err) {
+        throw err;
     }
 });
+
+app.post('/login', (req, res) => {
+    const idOperador = req.body.idoperador;
+    const noOperador = req.body.nooperador;
+    const sql = 'SELECT * FROM tboperador WHERE IdOperador = ? AND NoOperador = ?';
+    con.query(sql, [idOperador, noOperador], (erroComandoSQL, result, fields) => {
+      if (erroComandoSQL) {
+        throw erroComandoSQL;
+      } else {
+        if (result.length > 0) {
+          //const nome = result[0].NoOperador;
+          const token = jwt.sign({ idOperador, noOperador }, MinhaSenha, {
+            expiresIn: 60 * 10, // expires in 5min (300 segundos ==> 5 x 60)
+          });
+          res.json({ auth: true, token: token });
+        } else {
+          res.status(403).json({ message: 'Login inválido!' });
+        }
+      }
+    });
+  });
 
 function verificarToken(req, res, next) {
     const token = req.headers['x-access-token'];
@@ -41,12 +62,6 @@ function verificarToken(req, res, next) {
         });
     }
 }
-
-con.connect((err) => {
-    if (err) {
-        throw err;
-    }
-});
 
 app.get('/', (req, res) => {
     res.send('Hello World!');
@@ -152,6 +167,8 @@ app.put('/autor/:id', (req, res) => {
     });
 })
 
+// Rotas de Editora
+app.use('/editora', editoraRouter);
 
 app.listen(port, () => {
     console.log(`O servidor está ouvindo na porta ${port}`);
