@@ -1,6 +1,12 @@
 const express = require('express');
 const mysql = require('mysql');
+const cors = require('cors');
+const jwt = require('jsonwebtoken');
+//const bodyParser = require('body-parser');
+
 const app = express();
+app.use(cors());
+//app.use(bodyParser);
 
 const connection = mysql.createConnection({
     host: 'localhost',
@@ -16,7 +22,32 @@ connection.connect((error) => {
     else {
         console.log('Conectado ao banco de dados com sucesso');
     }
-})
+});
+
+function gerarToken(payload) {
+    const senhaToken = 'IFRN2@23';
+    return jwt.sign(payload, senhaToken, {expiresIn: 20});
+}
+
+app.post('/login', (req, res) => {
+    const loginName = req.body.loginName;
+    const password = req.body.password;
+    connection.query('SELECT nomeusuario FROM usuarios WHERE loginname = ? AND password = ?', [loginName, password], (error, rows) => {
+        if (error) {
+            console.log('Erro ao processar o comando SQL. ', error.message);
+        }
+        else {
+            if (rows.length > 0) {
+                const payload = { nomeUsuario: rows[0].nomeusuario };
+                const token = gerarToken(payload);
+                res.json({ acessToken: token });
+            }
+            else {
+                res.status(403).json({ mensagemErro: 'Usuário ou senha inválidos' });
+            }
+        }
+    });
+});
 
 app.get('/usuarios', (req, res) => {
     connection.query('SELECT codusuario, nomeusuario, loginname FROM usuarios', (error, rows) => {
