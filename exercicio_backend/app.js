@@ -2,11 +2,12 @@ const express = require('express');
 const mysql = require('mysql');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-//const bodyParser = require('body-parser');
+const bodyParser = require('body-parser');
+const crypto = require('crypto');
 
 const app = express();
 app.use(cors());
-//app.use(bodyParser);
+app.use(bodyParser.json());
 
 const connection = mysql.createConnection({
     host: 'localhost',
@@ -14,6 +15,8 @@ const connection = mysql.createConnection({
     password: '',
     database: 'exercicio_backend'
 });
+
+const senhaToken = 'IFRN2@23';
 
 connection.connect((error) => {
     if (error) {
@@ -25,13 +28,20 @@ connection.connect((error) => {
 });
 
 function gerarToken(payload) {
-    const senhaToken = 'IFRN2@23';
     return jwt.sign(payload, senhaToken, {expiresIn: 20});
 }
 
+function encriptarSenha(senha) {
+    const hash = crypto.createHash('sha256');
+    hash.update(senha + senhaToken);
+    const senhaEncriptada = hash.digest('hex');
+    return senhaEncriptada;
+}
+
+
 app.post('/login', (req, res) => {
     const loginName = req.body.loginName;
-    const password = req.body.password;
+    const password = encriptarSenha(req.body.password);
     connection.query('SELECT nomeusuario FROM usuarios WHERE loginname = ? AND password = ?', [loginName, password], (error, rows) => {
         if (error) {
             console.log('Erro ao processar o comando SQL. ', error.message);
@@ -45,6 +55,20 @@ app.post('/login', (req, res) => {
             else {
                 res.status(403).json({ mensagemErro: 'Usuário ou senha inválidos' });
             }
+        }
+    });
+});
+
+app.post('/usuarios', (req, res) => {
+    const nomeUsuario = req.body.nomeUsuario;
+    const loginName = req.body.loginName;
+    const password = encriptarSenha(req.body.password);
+    connection.query('INSERT INTO usuarios (nomeusuario, loginname, password) VALUES (?, ?, ?)', [nomeUsuario, loginName, password], (error, rows) => {
+        if (error) {
+            console.log('Erro ao processar o comando SQL. ', error.message);
+        }
+        else {
+                res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso' });
         }
     });
 });
