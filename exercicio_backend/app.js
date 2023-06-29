@@ -31,6 +31,25 @@ function gerarToken(payload) {
     return jwt.sign(payload, senhaToken, {expiresIn: 20});
 }
 
+function verificarToken(req, res, next) {
+    const token = req.heraders['x-access-token'];
+    if (!token) {
+        return res.status(401).json({ mensagemErro: 'Usuário não autenticado. Faça login antes de chamar este recurso.' });
+    }
+    else {
+        jwt.verify(token, senhaToken, (error, decoded) => {
+            if (error) {
+                return res.status(403).json({ mensagemErro: 'Token inválido. Faça login novamente.' });
+            }
+            else {
+                const nomeUsuario = decoded.nomeUsuario;
+                console.log(`Usuário ${nomeUsuario} autenticado com sucesso.`);
+                next();
+            }
+        })
+    }
+}
+
 function encriptarSenha(senha) {
     const hash = crypto.createHash('sha256');
     hash.update(senha + senhaToken);

@@ -1,0 +1,20 @@
+{
+  "name": "exercicio_backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "formidable": "^3.5.0",
+    "jsonwebtoken": "^9.0.0",
+    "mysql": "^2.18.1"
+  }
+}
